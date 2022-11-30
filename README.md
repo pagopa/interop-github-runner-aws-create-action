@@ -1,1 +1,1 @@
-# github-self-hosted-runner-azure-create-action
+# interop-github-runner-aws-create-action
