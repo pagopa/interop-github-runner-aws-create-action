@@ -100,7 +100,7 @@ runs:
           exit 1
         fi
 
-        curl - s\
+        curl -s \
           -X PUT \
           -H "Accept: application/vnd.github+json" \
           -H "Authorization: Bearer ${{ inputs.pat_token }}" \
