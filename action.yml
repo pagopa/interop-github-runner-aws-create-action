@@ -29,7 +29,7 @@ inputs:
 
 outputs:
   runner_name:
-    value: ${{ steps.create_github_runner.outputs.ECS_TASK_ID }}
+    value: ${{ steps.create_github_runner.outputs.runner_name }}
     description: 'Name of the self-hosted runner'
 
 runs:
@@ -70,12 +70,16 @@ runs:
           | jq -r '.tasks[0].taskArn' \
           | cut -d "/" -f 3)
 
+        echo "[INFO] Started ECS task $ECS_TASK_ID"
+        echo "[INFO] Waiting for self-hosted runner registration"
         sleep 30
 
         START_TIME=$(date +%s)
         while [ $(( $(date +%s) - 300 )) -lt $START_TIME ]; do
 
-          GITHUB_RUNNER_ID=$(curl \
+        echo "[INFO] Waiting for self-hosted runner registration"
+
+          GITHUB_RUNNER_ID=$(curl -s \
               -H "Accept: application/vnd.github+json" \
               -H "Authorization: Bearer ${{ inputs.pat_token }}" \
               https://api.github.com/repos/${{ github.repository }}/actions/runners \
@@ -96,7 +100,7 @@ runs:
           exit 1
         fi
 
-        curl \
+        curl - s\
           -X PUT \
           -H "Accept: application/vnd.github+json" \
           -H "Authorization: Bearer ${{ inputs.pat_token }}" \
