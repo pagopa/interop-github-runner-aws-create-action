@@ -2,105 +2,93 @@ name: "Create GitHub self hosted runner"
 description: "Create a GitHub self hosted runner on Azure"
 
 inputs:
-  client_id:
-    description: "Azure service principal App Id"
+  aws_region:
+    description: "AWS region code"
     required: true
-  tenant_id:
-    description: "Azure tenant id"
+  iam_role_arn:
+    description: "ARN of the IAM role to assume"
     required: true
-  subscription_id:
-    description: "Azure subscription Id"
+  ecs_cluster_name:
+    description: "ECS cluster"
     required: true
-  container_app_environment_name:
-    description: "Azure container app environment name"
+  ecs_task_definition_arn:
+    description: "ECS task definition ARN"
     required: true
-  resource_group_name:
-    description: "Azure container app environment resource group name"
+  ecs_container_name:
+    description: "Name of the gh runner container in the ECS task definition"
     required: true
-  pat_token:
-    description: "GitHub PAT token to access to APIs to manage self hosted runner"
+  ecs_task_subnet_id:
+    description: "ID of the subnet where the task will run"
     required: true
-  self_hosted_runner_image_tag:
-    description: "Self hosted runner image tag from https://github.com/pagopa/github-self-hosted-runner/pkgs/container/github-self-hosted-runner"
+  ecs_task_sec_group:
+    description: "ID of security group to attach to the task"
     required: true
-    default: "v1.2.0@sha256:44ddb565579f88519aff54d437558afc37480cb5d8db37c451c4a97d73ad3a3b"
 
 outputs:
   runner_name:
-    value: ${{ steps.create_github_runner.outputs.AZURE_CONTAINER_APP_NAME }}
-    description: 'Whether a new release was published'
+    value: ${{ steps.create_github_runner.outputs.ECS_TASK_ID }}
+    description: 'Name of the self-hosted runner'
 
 runs:
   using: "composite"
   steps:
-      - name: Login
-        id: login
-        uses: azure/login@v1
-        with:
-          client-id: ${{ inputs.client_id }}
-          tenant-id: ${{ inputs.tenant_id }}
-          subscription-id: ${{ inputs.subscription_id }}
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-region: ${{ inputs.aws_region }}
+        role-to-assume: ${{ inputs.iam_role_arn }}
 
-      - name: Create GitHub Runner
-        id: create_github_runner
-        shell: bash
-        run: |
-          TIMESTAMP=$(date +%s)
-          SELF_HOSTED_RUNNER_IMAGE="ghcr.io/pagopa/github-self-hosted-runner:${{ inputs.self_hosted_runner_image_tag }}"
+    - name: Create GitHub Runner
+      id: create_github_runner
+      shell: bash
+      run: |
+        TIMESTAMP=$(date +%s)
 
-          AZURE_RESOURCE_GROUP_NAME="${{ inputs.resource_group_name }}"
-          AZURE_CONTAINER_APP_ENVIRONMENT_NAME="${{ inputs.container_app_environment_name }}"
-          AZURE_CONTAINER_APP_NAME="runner-${{ github.run_id }}${TIMESTAMP}"
-          echo "[INFO] AZURE_CONTAINER_APP_NAME: ${AZURE_CONTAINER_APP_NAME}"
-          echo "::set-output name=AZURE_CONTAINER_APP_NAME::${AZURE_CONTAINER_APP_NAME}"
+        REGISTRATION_TOKEN=$(curl \
+          -X POST \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+          https://api.github.com/repos/${{ github.repository }}/actions/runners/registration-token | jq ".token" -r)
 
-          GITHUB_TOKEN=$(curl \
-            -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ inputs.pat_token }}" \
-            https://api.github.com/repos/${{ github.repository }}/actions/runners/registration-token | jq ".token" -r)
+        echo "{\"awsvpcConfiguration\":{\"assignPublicIp\":\"DISABLED\",
+            \"securityGroups\":[\"${{ inputs.ecs_task_sec_group }}\"],
+            \"subnets\":[\"${{ inputs.ecs_task_subnet_id }}\"]}}" > network_config.json
 
-          az config set extension.use_dynamic_install=yes_without_prompt
+        echo "{\"containerOverrides\":[{\"name\":\"${{ inputs.ecs_container_name }}\",\"environment\":[
+              {\"name\":\"GITHUB_REPOSITORY\",\"value\":\"https://github.com/${{ github.repository }}\"},
+              {\"name\":\"GITHUB_TOKEN\",\"value\":\"${REGISTRATION_TOKEN}\"}]}]}" > overrides.json
 
-          az containerapp create \
-            --name "${AZURE_CONTAINER_APP_NAME}" \
-            --resource-group "${AZURE_RESOURCE_GROUP_NAME}" \
-            --image "${SELF_HOSTED_RUNNER_IMAGE}" \
-            --environment "${AZURE_CONTAINER_APP_ENVIRONMENT_NAME}" \
-            --secrets github-token="${GITHUB_TOKEN}" \
-            --env-vars \
-            GITHUB_REPOSITORY="https://github.com/${{ github.repository }}" \
-            GITHUB_TOKEN=secretref:github-token
+        ECS_TASK_ID=$(aws ecs run-task \
+          --launch-type "FARGATE" \
+          --cluster "${{ inputs.ecs_cluster_name }}" \
+          --network-configuration file://./network_config.json \
+          --task-definition "${{ inputs.ecs_task_definition_arn }}" \
+          --overrides file://./overrides.json \
+          | jq -r '.tasks[0].taskArn' \
+          | cut -d "/" -f 3)
 
-          sleep 30
+        sleep 30
 
-          START_TIME=$(date +%s)
-          while [ $(( $(date +%s) - 300 )) -lt $START_TIME ]; do
+        START_TIME=$(date +%s)
+        while [ $(( $(date +%s) - 300 )) -lt $START_TIME ]; do
 
-            GITHUB_RUNNER_ID=$(curl \
-                -H "Accept: application/vnd.github+json" \
-                -H "Authorization: Bearer ${{ inputs.pat_token }}" \
-                https://api.github.com/repos/${{ github.repository }}/actions/runners | jq '.runners | map(select(.name | startswith("'${AZURE_CONTAINER_APP_NAME}'"))) | .[].id' -r)
+          GITHUB_RUNNER_ID=$(curl \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+              https://api.github.com/repos/${{ github.repository }}/actions/runners \
+              | jq -r '.runners | map(select(.name | startswith("'$ECS_TASK_ID'"))) | .[].id')
 
-            if [ -n "$GITHUB_RUNNER_ID" ]
-            then
-              echo "[INFO] GITHUB_RUNNER_ID: ${GITHUB_RUNNER_ID} is NOT empty"
-              break
-            fi
-
-            sleep 5
-
-          done
-
-          if [ -z "$GITHUB_RUNNER_ID" ]
-          then
-            echo "[INFO] GITHUB_RUNNER_ID is empty"
-            exit 1
+          if [ -n "$GITHUB_RUNNER_ID" ]; then
+            echo "[INFO] Self-hosted runner ${ECS_TASK_ID} has been added to this repo"
+            echo "runner_name=${ECS_TASK_ID}" >> $GITHUB_OUTPUT
+            break
           fi
 
-          curl \
-            -X PUT \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ inputs.pat_token }}" \
-            https://api.github.com/repos/${{ github.repository }}/actions/runners/${GITHUB_RUNNER_ID}/labels \
-            -d '{"labels":["'${AZURE_CONTAINER_APP_NAME}'"]}'
+          sleep 10
+
+        done
+
+        if [ -z "$GITHUB_RUNNER_ID" ]; then
+          echo "[ERROR] Self-hosted runner didn't register" >&2
+          exit 1
+        fi
