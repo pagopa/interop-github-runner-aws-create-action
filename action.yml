@@ -23,6 +23,9 @@ inputs:
   ecs_task_sec_group:
     description: "ID of security group to attach to the task"
     required: true
+  pat_token:
+    description: "GitHub PAT token to access APIs to manage self hosted runner"
+    required: true
 
 outputs:
   runner_name:
@@ -47,7 +50,7 @@ runs:
         REGISTRATION_TOKEN=$(curl \
           -X POST \
           -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+          -H "Authorization: Bearer ${{ inputs.pat_token }}" \
           https://api.github.com/repos/${{ github.repository }}/actions/runners/registration-token | jq ".token" -r)
 
         echo "{\"awsvpcConfiguration\":{\"assignPublicIp\":\"DISABLED\",
@@ -74,9 +77,9 @@ runs:
 
           GITHUB_RUNNER_ID=$(curl \
               -H "Accept: application/vnd.github+json" \
-              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+              -H "Authorization: Bearer ${{ inputs.pat_token }}" \
               https://api.github.com/repos/${{ github.repository }}/actions/runners \
-              | jq -r '.runners | map(select(.name | startswith("'$ECS_TASK_ID'"))) | .[].id')
+              | jq -r '.runners | map(select(.name == "'$ECS_TASK_ID'")) | .[].id')
 
           if [ -n "$GITHUB_RUNNER_ID" ]; then
             echo "[INFO] Self-hosted runner ${ECS_TASK_ID} has been added to this repo"
@@ -89,6 +92,13 @@ runs:
         done
 
         if [ -z "$GITHUB_RUNNER_ID" ]; then
-          echo "[ERROR] Self-hosted runner didn't register" >&2
+          echo "[ERROR] $GITHUB_RUNNER_ID is empty" >&2
           exit 1
         fi
+
+        curl \
+          -X PUT \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ inputs.pat_token }}" \
+          https://api.github.com/repos/${{ github.repository }}/actions/runners/${GITHUB_RUNNER_ID}/labels \
+          -d '{"labels":["'${ECS_TASK_ID}'"]}'
