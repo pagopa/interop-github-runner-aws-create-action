@@ -47,7 +47,7 @@ runs:
       run: |
         TIMESTAMP=$(date +%s)
 
-        REGISTRATION_TOKEN=$(curl \
+        REGISTRATION_TOKEN=$(curl -s \
           -X POST \
           -H "Accept: application/vnd.github+json" \
           -H "Authorization: Bearer ${{ inputs.pat_token }}" \
