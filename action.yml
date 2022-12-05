@@ -77,7 +77,7 @@ runs:
         START_TIME=$(date +%s)
         while [ $(( $(date +%s) - 300 )) -lt $START_TIME ]; do
 
-        echo "[INFO] Waiting for self-hosted runner registration"
+          echo "[INFO] Waiting for self-hosted runner registration"
 
           GITHUB_RUNNER_ID=$(curl -s \
               -H "Accept: application/vnd.github+json" \
