@@ -11,8 +11,8 @@ inputs:
   ecs_cluster_name:
     description: "ECS cluster"
     required: true
-  ecs_task_definition_arn:
-    description: "ECS task definition ARN"
+  ecs_task_definition:
+    description: "ECS task definition family[:revision] or full ARN"
     required: true
   ecs_container_name:
     description: "Name of the gh runner container in the ECS task definition"
@@ -65,7 +65,7 @@ runs:
           --launch-type "FARGATE" \
           --cluster "${{ inputs.ecs_cluster_name }}" \
           --network-configuration file://./network_config.json \
-          --task-definition "${{ inputs.ecs_task_definition_arn }}" \
+          --task-definition "${{ inputs.ecs_task_definition }}" \
           --overrides file://./overrides.json \
           | jq -r '.tasks[0].taskArn' \
           | cut -d "/" -f 3)
