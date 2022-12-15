@@ -1,5 +1,5 @@
 name: "Create GitHub self hosted runner"
-description: "Create a GitHub self hosted runner on Azure"
+description: "Create a GitHub self hosted runner on AWS"
 
 inputs:
   aws_region:
@@ -45,7 +45,7 @@ runs:
       id: create_github_runner
       shell: bash
       run: |
-        TIMESTAMP=$(date +%s)
+        set -eo pipefail
 
         REGISTRATION_TOKEN=$(curl -s \
           -X POST \
@@ -53,12 +53,16 @@ runs:
           -H "Authorization: Bearer ${{ inputs.pat_token }}" \
           https://api.github.com/repos/${{ github.repository }}/actions/runners/registration-token | jq ".token" -r)
 
+        RUNNER_NAME="${{ github.run_id }}-${{ matrix.index }}"
+        GITHUB_REPOSITORY="https://github.com/${{ github.repository }}"
+
         echo "{\"awsvpcConfiguration\":{\"assignPublicIp\":\"DISABLED\",
             \"securityGroups\":[\"${{ inputs.ecs_task_sec_group }}\"],
             \"subnets\":[\"${{ inputs.ecs_task_subnet_id }}\"]}}" > network_config.json
 
         echo "{\"containerOverrides\":[{\"name\":\"${{ inputs.ecs_container_name }}\",\"environment\":[
-              {\"name\":\"GITHUB_REPOSITORY\",\"value\":\"https://github.com/${{ github.repository }}\"},
+              {\"name\":\"RUNNER_NAME\",\"value\":\"${RUNNER_NAME}\"},
+              {\"name\":\"GITHUB_REPOSITORY\",\"value\":\"${GITHUB_REPOSITORY}\"},
               {\"name\":\"GITHUB_TOKEN\",\"value\":\"${REGISTRATION_TOKEN}\"}]}]}" > overrides.json
 
         ECS_TASK_ID=$(aws ecs run-task \
@@ -83,11 +87,10 @@ runs:
               -H "Accept: application/vnd.github+json" \
               -H "Authorization: Bearer ${{ inputs.pat_token }}" \
               https://api.github.com/repos/${{ github.repository }}/actions/runners \
-              | jq -r '.runners | map(select(.name == "'$ECS_TASK_ID'")) | .[].id')
+              | jq -r '.runners | map(select(.name == "'$RUNNER_NAME'")) | .[].id')
 
           if [ -n "$GITHUB_RUNNER_ID" ]; then
-            echo "[INFO] Self-hosted runner ${ECS_TASK_ID} has been added to this repo"
-            echo "runner_name=${ECS_TASK_ID}" >> $GITHUB_OUTPUT
+            echo "[INFO] Self-hosted runner ${RUNNER_NAME} has been added to this repo"
             break
           fi
 
@@ -105,4 +108,4 @@ runs:
           -H "Accept: application/vnd.github+json" \
           -H "Authorization: Bearer ${{ inputs.pat_token }}" \
           https://api.github.com/repos/${{ github.repository }}/actions/runners/${GITHUB_RUNNER_ID}/labels \
-          -d '{"labels":["'${ECS_TASK_ID}'"]}'
+          -d '{"labels":["run_id:${{ github.run_id }}", "matrix_index:${{matrix.index}}", "task_id:'${ECS_TASK_ID}']}'
