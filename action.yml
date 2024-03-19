@@ -91,6 +91,13 @@ runs:
 
           if [ -n "$GITHUB_RUNNER_ID" ]; then
             echo "[INFO] Self-hosted runner ${RUNNER_NAME} has been added to this repo"
+            GITHUB_RUNNER_STATUS=$(curl -s \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${{ inputs.pat_token }}" \
+              https://api.github.com/repos/${{ github.repository }}/actions/runners \
+              | jq -r '.runners | map(select(.name == "'$RUNNER_NAME'") | .[].status))
+              echo "[INFO] Self-hosted runner status ${GITHUB_RUNNER_STATUS}"
+
             break
           fi
 
