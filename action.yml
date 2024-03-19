@@ -95,7 +95,7 @@ runs:
               -H "Accept: application/vnd.github+json" \
               -H "Authorization: Bearer ${{ inputs.pat_token }}" \
               https://api.github.com/repos/${{ github.repository }}/actions/runners \
-              | jq -r '.runners | map(select(.name == "'$RUNNER_NAME'") | .[].status))
+              | jq -r '.runners | map(select(.name == "'$RUNNER_NAME'")) | .[].status')
               echo "[INFO] Self-hosted runner status ${GITHUB_RUNNER_STATUS}"
 
             break
