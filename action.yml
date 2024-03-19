@@ -110,7 +110,9 @@ runs:
           exit 1
         fi
 
+        # -f Fail fast with no output on HTTP errors
         curl -s \
+          -f
           -X PUT \
           -H "Accept: application/vnd.github+json" \
           -H "Authorization: Bearer ${{ inputs.pat_token }}" \
