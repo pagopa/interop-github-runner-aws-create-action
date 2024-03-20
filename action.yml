@@ -89,7 +89,7 @@ runs:
               https://api.github.com/repos/${{ github.repository }}/actions/runners)
               echo "[INFO] RUNNERS_LIST: $RUNNERS_LIST"
 
-          GITHUB_RUNNER_ID=$(echo RUNNERS_LIST | jq -r '.runners | map(select(.name == "'$RUNNER_NAME'")) | .[].id')
+          GITHUB_RUNNER_ID=$(echo $RUNNERS_LIST | jq -r '.runners | map(select(.name == "'$RUNNER_NAME'")) | .[].id')
 
           if [ -n "$GITHUB_RUNNER_ID" ]; then
             echo "[INFO] Self-hosted runner ${RUNNER_NAME} has been added to this repo"
