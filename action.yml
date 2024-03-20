@@ -114,6 +114,7 @@ runs:
 
         # -f Fail fast with no output on HTTP errors
         curl -s \
+          -S \
           -f \
           --write-out '\nhttp_code=%{http_code}\nexitcode=%{exitcode}\n' \
           -X PUT \
