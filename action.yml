@@ -136,7 +136,7 @@ runs:
 
           LABELS_APPLIED=$(echo $SET_LABELS_OUTPUT | jq -r '.labels')
           if [[ ! $LABELS_APPLIED == null ]]; then
-            echo "[INFO] Labels set: " $LABELS_APPLIED
+            echo "[INFO] Labels set: " $SET_LABEL_OUTPUT
             labels_have_been_applied=true
             break
           else
