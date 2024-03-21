@@ -37,6 +37,9 @@ outputs:
   runner_name:
     value: ${{ steps.create_github_runner.outputs.runner_name }}
     description: 'Name of the self-hosted runner'
+  ecs_task_id:
+    value: ${{ steps.create_github_runner.outputs.ecs_task_id }}
+    description: 'Id of the ECS task that has been started'
 
 runs:
   using: "composite"
@@ -84,6 +87,8 @@ runs:
           | cut -d "/" -f 3)
 
         echo "[INFO] Started ECS task $ECS_TASK_ID"
+        echo "ecs_task_id=$(echo $ECS_TASK_ID)" >> $GITHUB_OUTPUT
+
         echo "[INFO] Waiting for self-hosted runner registration"
         sleep 30
 
