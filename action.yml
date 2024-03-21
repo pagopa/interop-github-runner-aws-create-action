@@ -97,11 +97,6 @@ runs:
               -H "Authorization: Bearer ${{ inputs.pat_token }}" \
               https://api.github.com/repos/${{ github.repository }}/actions/runners)
 
-          GITHUB_RUNNER=$(echo $RUNNERS_LIST | jq -r '.runners | map(select(.name == "'$RUNNER_NAME'"))')
-          if [ -n $GITHUB_RUNNER ]; then
-            echo "[INFO] FOUND RUNNER: $GITHUB_RUNNER"
-          fi
-
           GITHUB_RUNNER_ID=$(echo $RUNNERS_LIST | jq -r '.runners | map(select(.name == "'$RUNNER_NAME'")) | .[].id')
 
           if [ -n "$GITHUB_RUNNER_ID" ]; then
