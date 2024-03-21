@@ -97,20 +97,21 @@ runs:
               -H "Authorization: Bearer ${{ inputs.pat_token }}" \
               https://api.github.com/repos/${{ github.repository }}/actions/runners)
 
-          GITHUB_RUNNER_ID=$(echo $RUNNERS_LIST | jq -r '.runners | map(select(.name == "'$RUNNER_NAME'")) | .[].id')
+          if [ -n "$RUNNERS_LIST" ]; then
+            GITHUB_RUNNER_ID=$(echo $RUNNERS_LIST | jq -r '.runners | map(select(.name == "'$RUNNER_NAME'")) | .[].id')
 
-          if [ -n "$GITHUB_RUNNER_ID" ]; then
-            echo "[INFO] Self-hosted runner ${RUNNER_NAME} has been added to this repo"
-            GITHUB_RUNNER_STATUS=$(curl -s \
-              -H "Accept: application/vnd.github+json" \
-              -H "Authorization: Bearer ${{ inputs.pat_token }}" \
-              https://api.github.com/repos/${{ github.repository }}/actions/runners \
-              | jq -r '.runners | map(select(.name == "'$RUNNER_NAME'")) | .[].status')
-              echo "[INFO] Self-hosted runner status ${GITHUB_RUNNER_STATUS}"
+            if [ -n "$GITHUB_RUNNER_ID" ]; then
+              echo "[INFO] Self-hosted runner ${RUNNER_NAME} has been added to this repo"
+              GITHUB_RUNNER_STATUS=$(curl -s \
+                -H "Accept: application/vnd.github+json" \
+                -H "Authorization: Bearer ${{ inputs.pat_token }}" \
+                https://api.github.com/repos/${{ github.repository }}/actions/runners \
+                | jq -r '.runners | map(select(.name == "'$RUNNER_NAME'")) | .[].status')
+                echo "[INFO] Self-hosted runner status ${GITHUB_RUNNER_STATUS}"
 
-            break
+              break
+            fi
           fi
-
           #sleep was 10s
           sleep 5
 
