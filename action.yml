@@ -126,9 +126,7 @@ runs:
         labels_have_been_applied=false
         while [ "$retry_count" -lt "$max_retry" ]; do
           # --write-out '\nhttp_code=%{http_code}\nexitcode=%{exitcode}\n' \
-          SET_LABEL_OUTPUT=$(curl -s \
-            -S \
-            -f \
+          SET_LABEL_OUTPUT=$(curl -s -S \
             -X PUT \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ inputs.pat_token }}" \
