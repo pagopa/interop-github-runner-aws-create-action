@@ -60,10 +60,13 @@ runs:
             \"securityGroups\":[\"${{ inputs.ecs_task_sec_group }}\"],
             \"subnets\":[\"${{ inputs.ecs_task_subnet_id }}\"]}}" > network_config.json
 
-        echo "{\"containerOverrides\":[{\"name\":\"${{ inputs.ecs_container_name }}\",\"environment\":[
-              {\"name\":\"RUNNER_NAME\",\"value\":\"${RUNNER_NAME}\"},
-              {\"name\":\"GITHUB_REPOSITORY\",\"value\":\"${GITHUB_REPOSITORY}\"},
-              {\"name\":\"GITHUB_TOKEN\",\"value\":\"${REGISTRATION_TOKEN}\"}]}]}" > overrides.json
+        echo "{\"containerOverrides\":[{\"name\":\"${{ inputs.ecs_container_name }}\",
+              \"cpu\": ${{ vars.ECS_TASK_CPU}},
+              \"memory\": ${{ vars.ECS_TASK_MEMORY }},
+              \"environment\":[
+                {\"name\":\"RUNNER_NAME\",\"value\":\"${RUNNER_NAME}\"},
+                {\"name\":\"GITHUB_REPOSITORY\",\"value\":\"${GITHUB_REPOSITORY}\"},
+                {\"name\":\"GITHUB_TOKEN\",\"value\":\"${REGISTRATION_TOKEN}\"}]}]}" > overrides.json
 
         ECS_TASK_ID=$(aws ecs run-task \
           --launch-type "FARGATE" \
