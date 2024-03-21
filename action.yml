@@ -14,6 +14,12 @@ inputs:
   ecs_task_definition:
     description: "ECS task definition family[:revision] or full ARN"
     required: true
+  ecs_task_cpu:
+    description: "ECS task cpu"
+    required: false
+  ecs_task_memory:
+    description: "ECS task memory"
+    required: false
   ecs_container_name:
     description: "Name of the gh runner container in the ECS task definition"
     required: true
@@ -44,9 +50,6 @@ runs:
     - name: Create GitHub Runner
       id: create_github_runner
       shell: bash
-      env:
-        ECS_TASK_CPU: ${{ vars.ECS_TASK_CPU }}
-        ECS_TASK_MEMORY: ${{ vars.ECS_TASK_MEMORY }}
       run: |
         set -eo pipefail
 
@@ -64,8 +67,8 @@ runs:
             \"subnets\":[\"${{ inputs.ecs_task_subnet_id }}\"]}}" > network_config.json
 
         echo "{\"containerOverrides\":[{\"name\":\"${{ inputs.ecs_container_name }}\",
-              \"cpu\": ${ECS_TASK_CPU},
-              \"memory\": ${ECS_TASK_MEMORY},
+              \"cpu\": ${{ inputs.ecs_task_cpu }},
+              \"memory\": ${{ inputs.ecs_task_memory }},
               \"environment\":[
                 {\"name\":\"RUNNER_NAME\",\"value\":\"${RUNNER_NAME}\"},
                 {\"name\":\"GITHUB_REPOSITORY\",\"value\":\"${GITHUB_REPOSITORY}\"},
