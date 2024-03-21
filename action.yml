@@ -137,6 +137,7 @@ runs:
           if [[ ! $LABELS_APPLIED == null ]]; then
             echo $LABELS_APPLIED
             labels_have_been_applied=true
+            break
           else
             echo "Labels not yet applied: " $SET_LABEL_OUTPUT
             retry_count=$(($retry_count+1))
