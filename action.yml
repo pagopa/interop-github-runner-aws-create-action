@@ -127,7 +127,7 @@ runs:
         labels_have_been_applied=false
         while [ "$retry_count" -lt "$max_retry" ]; do
           # --write-out '\nhttp_code=%{http_code}\nexitcode=%{exitcode}\n' \
-          SET_LABEL_OUTPUT=$(curl -s -S \
+          SET_LABEL_OUTPUT=$(curl -s \
             -X PUT \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ inputs.pat_token }}" \
@@ -136,16 +136,17 @@ runs:
 
           LABELS_APPLIED=$(echo $SET_LABELS_OUTPUT | jq -r '.labels')
           if [[ ! $LABELS_APPLIED == null ]]; then
-            echo $LABELS_APPLIED
+            echo "[INFO] Labels set: " $LABELS_APPLIED
             labels_have_been_applied=true
             break
           else
-            echo "Labels not yet applied: " $SET_LABEL_OUTPUT
+            echo "[INFO] Labels not yet applied: " $SET_LABEL_OUTPUT
             retry_count=$(($retry_count+1))
           fi
         done
 
         if [[ "$labels_have_been_applied" = false ]]; then
+          echo "[ERROR] Cannot set labels for runner"
           exit 1
         fi
 
