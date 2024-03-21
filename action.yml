@@ -44,6 +44,9 @@ runs:
     - name: Create GitHub Runner
       id: create_github_runner
       shell: bash
+      env:
+        ECS_TASK_CPU: ${{ vars.ECS_TASK_CPU }}
+        ECS_TASK_MEMORY: ${{ vars.ECS_TASK_MEMORY }}
       run: |
         set -eo pipefail
 
@@ -61,8 +64,8 @@ runs:
             \"subnets\":[\"${{ inputs.ecs_task_subnet_id }}\"]}}" > network_config.json
 
         echo "{\"containerOverrides\":[{\"name\":\"${{ inputs.ecs_container_name }}\",
-              \"cpu\": ${{ vars.ECS_TASK_CPU}},
-              \"memory\": ${{ vars.ECS_TASK_MEMORY }},
+              \"cpu\": ${ECS_TASK_CPU},
+              \"memory\": ${ECS_TASK_MEMORY},
               \"environment\":[
                 {\"name\":\"RUNNER_NAME\",\"value\":\"${RUNNER_NAME}\"},
                 {\"name\":\"GITHUB_REPOSITORY\",\"value\":\"${GITHUB_REPOSITORY}\"},
