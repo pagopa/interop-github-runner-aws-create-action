@@ -121,13 +121,31 @@ runs:
           exit 1
         fi
 
-        # -f Fail fast with no output on HTTP errors
-        curl -s \
-          -S \
-          -f \
-          --write-out '\nhttp_code=%{http_code}\nexitcode=%{exitcode}\n' \
-          -X PUT \
-          -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer ${{ inputs.pat_token }}" \
-          https://api.github.com/repos/${{ github.repository }}/actions/runners/${GITHUB_RUNNER_ID}/labels \
-          -d '{"labels":["run_id:${{ github.run_id }}", "matrix_index:${{matrix.index}}", "task_id:'${ECS_TASK_ID}'", "run_number:${{ github.run_number }}"]}'
+        retry_count=0
+        max_retry=5
+        labels_have_been_applied=false
+        while [ "$retry_count" -lt "$max_retry" ]; do
+          # --write-out '\nhttp_code=%{http_code}\nexitcode=%{exitcode}\n' \
+          SET_LABEL_OUTPUT=$(curl -s \
+            -S \
+            -f \
+            -X PUT \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ inputs.pat_token }}" \
+            https://api.github.com/repos/${{ github.repository }}/actions/runners/${GITHUB_RUNNER_ID}/labels \
+            -d '{"labels":["run_id:${{ github.run_id }}", "matrix_index:${{matrix.index}}", "task_id:'${ECS_TASK_ID}'", "run_number:${{ github.run_number }}"]}')
+
+          LABELS_APPLIED=$(echo $SET_LABELS_OUTPUT | jq -r '.labels')
+          if [[ ! $LABELS_APPLIED == null ]]; then
+            echo $LABELS_APPLIED
+            labels_have_been_applied=true
+          else
+            echo "Labels not yet applied: " $SET_LABEL_OUTPUT
+            retry_count=$(($retry_count+1))
+          fi
+        done
+
+        if [[ "$labels_have_been_applied" = false ]]; then
+          exit 1
+        fi
+
