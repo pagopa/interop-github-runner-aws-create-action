@@ -97,6 +97,7 @@ runs:
 
         ECS_TASK_ID=$(aws ecs run-task \
           --launch-type "FARGATE" \
+          --group "${RUNNER_NAME}" \
           --cluster "${{ inputs.ecs_cluster_name }}" \
           --network-configuration file://./network_config.json \
           --task-definition "${{ inputs.ecs_task_definition }}" \
@@ -156,8 +157,8 @@ runs:
             https://api.github.com/repos/${{ github.repository }}/actions/runners/${GITHUB_RUNNER_ID}/labels \
             -d '{"labels":["run_id:${{ github.run_id }}", "matrix_index:${{matrix.index}}", "task_id:'${ECS_TASK_ID}'", "run_number:${{ github.run_number }}"]}')
 
-          ERROR_MESSAGE=$(echo $SET_LABELS_OUTPUT | jq  '.["message"] | .[0]')
-          if [[ "${ERROR_MESSAGE}" = "null" ]]; then
+          ERROR_MESSAGE=$(echo $SET_LABELS_OUTPUT | grep "message")
+          if [[ -z $ERROR_MESSAGE ]]; then
             echo "[INFO] Labels set: " $SET_LABEL_OUTPUT
             labels_have_been_applied=true
 
