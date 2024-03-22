@@ -159,8 +159,8 @@ runs:
           ERROR_MESSAGE=$(echo $SET_LABELS_OUTPUT | jq  '.["message"] | .[0]')
           if [[ "${ERROR_MESSAGE}" = "null" ]]; then
             echo "[INFO] Labels set: " $SET_LABEL_OUTPUT
-            echo "Error MEssage " $ERROR_MESSAGE
             labels_have_been_applied=true
+
             break
           else
             echo "[INFO] Labels not yet applied: " $SET_LABEL_OUTPUT
