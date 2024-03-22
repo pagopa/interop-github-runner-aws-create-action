@@ -97,7 +97,7 @@ runs:
 
         ECS_TASK_ID=$(aws ecs run-task \
           --launch-type "FARGATE" \
-          --group "${RUNNER_NAME}" \
+          --family ${RUNNER_NAME} \
           --cluster "${{ inputs.ecs_cluster_name }}" \
           --network-configuration file://./network_config.json \
           --task-definition "${{ inputs.ecs_task_definition }}" \
