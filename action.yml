@@ -69,6 +69,8 @@ runs:
             \"securityGroups\":[\"${{ inputs.ecs_task_sec_group }}\"],
             \"subnets\":[\"${{ inputs.ecs_task_subnet_id }}\"]}}" > network_config.json
 
+        # TODO Gestire caso cpu e memory vuoti
+
         echo "{\"containerOverrides\":[{\"name\":\"${{ inputs.ecs_container_name }}\",
               \"cpu\": ${{ inputs.ecs_task_cpu }},
               \"memory\": ${{ inputs.ecs_task_memory }},
@@ -131,12 +133,11 @@ runs:
         max_retry=5
         labels_have_been_applied=false
         while [ "$retry_count" -lt "$max_retry" ]; do
-          # --write-out '\nhttp_code=%{http_code}\nexitcode=%{exitcode}\n' \
           SET_LABEL_OUTPUT=$(curl -s \
             -X PUT \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ inputs.pat_token }}" \
-            https://api.github.com/repos/${{ github.repository }}/actions/runners/${GITHUB_RUNNER_ID}/labelss \
+            https://api.github.com/repos/${{ github.repository }}/actions/runners/${GITHUB_RUNNER_ID}/labels \
             -d '{"labels":["run_id:${{ github.run_id }}", "matrix_index:${{matrix.index}}", "task_id:'${ECS_TASK_ID}'", "run_number:${{ github.run_number }}"]}')
 
           ERROR_MESSAGE=$(echo $SET_LABELS_OUTPUT | jq -r '.message')
@@ -148,6 +149,8 @@ runs:
             labels_have_been_applied=true
             break
           fi
+
+          sleep 5
         done
 
         if [[ "$labels_have_been_applied" = false ]]; then
