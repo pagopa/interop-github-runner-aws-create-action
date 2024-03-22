@@ -72,13 +72,25 @@ runs:
             \"securityGroups\":[\"${{ inputs.ecs_task_sec_group }}\"],
             \"subnets\":[\"${{ inputs.ecs_task_subnet_id }}\"]}}" > network_config.json
 
-        # TODO Gestire caso cpu, memory e ecs_task_max_duration_seconds vuoti
+        CPU_ENV_CONFIG=null
+        MEM_ENV_CONFIG=null
+        MAXDURATION_ENV_CONFIG=null
+
+        if [[ -n $CPU_ENV_CONFIG ]]; then
+          CPU_ENV_CONFIG="\"cpu\": ${{ inputs.ecs_task_cpu }},"
+        fi
+        if [[ -n $MEM_ENV_CONFIG ]]; then
+          MEM_ENV_CONFIG="\"memory\": ${{ inputs.ecs_task_memory }},"
+        fi
+        if [[ -n ${{ inputs.ecs_task_max_duration_seconds }} ]]; then
+          MAXDURATION_ENV_CONFIG="{\"name\":\"ECS_TASK_MAX_DURATION_SECONDS\",\"value\":\"${{ inputs.ecs_task_max_duration_seconds }}\"},"
+        fi
 
         echo "{\"containerOverrides\":[{\"name\":\"${{ inputs.ecs_container_name }}\",
-              \"cpu\": ${{ inputs.ecs_task_cpu }},
-              \"memory\": ${{ inputs.ecs_task_memory }},
+              $CPU_ENV_CONFIG
+              $MEM_ENV_CONFIG
               \"environment\":[
-                {\"name\":\"ECS_TASK_MAX_DURATION_SECONDS\",\"value\":\"${{ inputs.ecs_task_max_duration_seconds }}\"},
+                $MAXDURATION_ENV_CONFIG
                 {\"name\":\"RUNNER_NAME\",\"value\":\"${RUNNER_NAME}\"},
                 {\"name\":\"GITHUB_REPOSITORY\",\"value\":\"${GITHUB_REPOSITORY}\"},
                 {\"name\":\"GITHUB_TOKEN\",\"value\":\"${REGISTRATION_TOKEN}\"}]}]}" > overrides.json
