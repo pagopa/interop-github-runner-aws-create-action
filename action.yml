@@ -111,6 +111,7 @@ runs:
         echo "[INFO] Waiting for self-hosted runner registration"
         sleep 30
 
+        GITHUB_RUNNER_ID=null
         START_TIME=$(date +%s)
         while [ $(( $(date +%s) - 300 )) -lt $START_TIME ]; do
 
