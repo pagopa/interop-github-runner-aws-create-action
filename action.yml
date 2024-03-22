@@ -135,8 +135,8 @@ runs:
               break
             fi
           fi
-          #sleep was 10s
-          sleep 5
+
+          sleep 10
 
         done
 
