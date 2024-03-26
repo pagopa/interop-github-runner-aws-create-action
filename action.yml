@@ -161,7 +161,7 @@ runs:
 
         retry_count=0
         max_retry=5
-        labels_have_been_applied=false
+        labels_have_been_applied=""
         echo "[INFO] Start loop to set label for self-hosted runner ${GITHUB_RUNNER_ID}"
         while [ "$retry_count" -lt "$max_retry" ]; do
           SET_LABEL_OUTPUT=$(curl -s \
@@ -175,9 +175,9 @@ runs:
           ERROR_MESSAGE=$(echo $SET_LABEL_OUTPUT | grep "message")
           if [ -z "$ERROR_MESSAGE" ]; then
             echo "[INFO] Labels have been set"
-            labels_have_been_applied=true
+            labels_have_been_applied="true"
 
-            break
+            exit 0
           else
             echo "[INFO] Labels not yet applied"
             retry_count=$(($retry_count+1))
@@ -186,7 +186,7 @@ runs:
           sleep 5
         done
 
-        if [[ "$labels_have_been_applied" = false ]]; then
+        if [[ -z "$labels_have_been_applied" ]]; then
           echo "[ERROR] Cannot set labels for runner"
           exit 1
         fi
