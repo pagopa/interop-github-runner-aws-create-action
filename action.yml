@@ -56,6 +56,10 @@ runs:
     - name: Create GitHub Runner
       id: create_github_runner
       shell: bash
+      env:
+        ECS_TASK_CPU: ${{ inputs.ecs_task_cpu }}
+        ECS_TASK_MEMORY: ${{ inputs.ecs_task_memory }}
+        ECS_TASK_MAX_DURATION_SECONDS: ${{ inputs.ecs_task_max_duration_seconds }}
       run: |
         set -eo pipefail
 
@@ -72,18 +76,21 @@ runs:
             \"securityGroups\":[\"${{ inputs.ecs_task_sec_group }}\"],
             \"subnets\":[\"${{ inputs.ecs_task_subnet_id }}\"]}}" > network_config.json
 
-        CPU_ENV_CONFIG=null
-        MEM_ENV_CONFIG=null
-        MAXDURATION_ENV_CONFIG=null
+        CPU_ENV_CONFIG=""
+        MEM_ENV_CONFIG=""
+        MAXDURATION_ENV_CONFIG=""
 
-        if [[ -n $CPU_ENV_CONFIG ]]; then
-          CPU_ENV_CONFIG="\"cpu\": ${{ inputs.ecs_task_cpu }},"
+        if [[ -n $ECS_TASK_CPU ]]; then
+          CPU_ENV_CONFIG="\"cpu\": ${ECS_TASK_CPU},"
+          echo "[DEBUG] CPU_ENV_CONFIG: $CPU_ENV_CONFIG"
         fi
-        if [[ -n $MEM_ENV_CONFIG ]]; then
-          MEM_ENV_CONFIG="\"memory\": ${{ inputs.ecs_task_memory }},"
+        if [[ -n $ECS_TASK_MEMORY ]]; then
+          MEM_ENV_CONFIG="\"memory\": ${ECS_TASK_MEMORY},"
+          echo "[DEBUG] MEM_ENV_CONFIG: $MEM_ENV_CONFIG"
         fi
-        if [[ -n ${{ inputs.ecs_task_max_duration_seconds }} ]]; then
-          MAXDURATION_ENV_CONFIG="{\"name\":\"ECS_TASK_MAX_DURATION_SECONDS\",\"value\":\"${{ inputs.ecs_task_max_duration_seconds }}\"},"
+        if [[ -n $ECS_TASK_MAX_DURATION_SECONDS ]]; then
+          MAXDURATION_ENV_CONFIG="{\"name\":\"ECS_TASK_MAX_DURATION_SECONDS\",\"value\":\"${ECS_TASK_MAX_DURATION_SECONDS}\"},"
+          echo "[DEBUG] MAXDURATION_ENV_CONFIG: $MAXDURATION_ENV_CONFIG"
         fi
 
         echo "{\"containerOverrides\":[{\"name\":\"${{ inputs.ecs_container_name }}\",
@@ -94,6 +101,10 @@ runs:
                 {\"name\":\"RUNNER_NAME\",\"value\":\"${RUNNER_NAME}\"},
                 {\"name\":\"GITHUB_REPOSITORY\",\"value\":\"${GITHUB_REPOSITORY}\"},
                 {\"name\":\"GITHUB_TOKEN\",\"value\":\"${REGISTRATION_TOKEN}\"}]}]}" > overrides.json
+
+        OVERRIDES=$(cat overrides.json)
+        echo "[DEBUG] Overrides: $OVERRIDES"
+
 
         #  --reference-id "${RUNNER_NAME}" \
         #  --group "${RUNNER_NAME}" \
