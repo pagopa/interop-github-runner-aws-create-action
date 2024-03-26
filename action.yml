@@ -173,9 +173,8 @@ runs:
 
           echo "[INFO] Set label API call result ${SET_LABEL_OUTPUT}"
 
-          set +e
-          ERROR_MESSAGE=$(echo $SET_LABEL_OUTPUT | grep "message")
-          set -e
+          # No-op prevents grep to exit code > 0 if no match is found
+          ERROR_MESSAGE=$(echo $SET_LABEL_OUTPUT | { grep "message" || :; } )
 
           if [ -z "$ERROR_MESSAGE" ]; then
             echo "[INFO] Labels have been set"
