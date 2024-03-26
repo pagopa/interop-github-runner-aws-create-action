@@ -172,7 +172,7 @@ runs:
             -d '{"labels":["run_id:${{ github.run_id }}", "matrix_index:${{matrix.index}}", "task_id:'${ECS_TASK_ID}'", "run_number:${{ github.run_number }}"]}')
 
           echo "[INFO] Set label API call result ${SET_LABEL_OUTPUT}"
-          ERROR_MESSAGE=$(echo $SET_LABELS_OUTPUT | grep "message")
+          ERROR_MESSAGE=$(echo $SET_LABEL_OUTPUT | grep "message")
           if [ -z "$ERROR_MESSAGE" ]; then
             echo "[INFO] Labels have been set"
             labels_have_been_applied=true
