@@ -82,15 +82,12 @@ runs:
 
         if [[ -n $ECS_TASK_CPU ]]; then
           CPU_ENV_CONFIG="\"cpu\": ${ECS_TASK_CPU},"
-          echo "[DEBUG] CPU_ENV_CONFIG: $CPU_ENV_CONFIG"
         fi
         if [[ -n $ECS_TASK_MEMORY ]]; then
           MEM_ENV_CONFIG="\"memory\": ${ECS_TASK_MEMORY},"
-          echo "[DEBUG] MEM_ENV_CONFIG: $MEM_ENV_CONFIG"
         fi
         if [[ -n $ECS_TASK_MAX_DURATION_SECONDS ]]; then
           MAXDURATION_ENV_CONFIG="{\"name\":\"ECS_TASK_MAX_DURATION_SECONDS\",\"value\":\"${ECS_TASK_MAX_DURATION_SECONDS}\"},"
-          echo "[DEBUG] MAXDURATION_ENV_CONFIG: $MAXDURATION_ENV_CONFIG"
         fi
 
         echo "{\"containerOverrides\":[{\"name\":\"${{ inputs.ecs_container_name }}\",
@@ -101,9 +98,6 @@ runs:
                 {\"name\":\"RUNNER_NAME\",\"value\":\"${RUNNER_NAME}\"},
                 {\"name\":\"GITHUB_REPOSITORY\",\"value\":\"${GITHUB_REPOSITORY}\"},
                 {\"name\":\"GITHUB_TOKEN\",\"value\":\"${REGISTRATION_TOKEN}\"}]}]}" > overrides.json
-
-        OVERRIDES=$(cat overrides.json)
-        echo "[DEBUG] Overrides: $OVERRIDES"
 
 
         #  --reference-id "${RUNNER_NAME}" \
