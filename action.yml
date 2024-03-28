@@ -35,6 +35,9 @@ inputs:
   pat_token:
     description: "GitHub PAT token to access APIs to manage self hosted runner"
     required: true
+  enviroment:
+    description: "Target environment on which the Github Runner will execute tasks"
+    required: false
 
 outputs:
   runner_name:
@@ -60,6 +63,7 @@ runs:
         ECS_TASK_CPU: ${{ inputs.ecs_task_cpu }}
         ECS_TASK_MEMORY: ${{ inputs.ecs_task_memory }}
         ECS_TASK_MAX_DURATION_SECONDS: ${{ inputs.ecs_task_max_duration_seconds }}
+        TARGET_ENV: ${{ inputs.enviroment }}
       run: |
         set -eo pipefail
 
@@ -99,10 +103,14 @@ runs:
                 {\"name\":\"GITHUB_REPOSITORY\",\"value\":\"${GITHUB_REPOSITORY}\"},
                 {\"name\":\"GITHUB_TOKEN\",\"value\":\"${REGISTRATION_TOKEN}\"}]}]}" > overrides.json
 
+        GROUP=${RUNNER_NAME}
+        if [[ -n "$TARGET_ENV" ]]; then
+          GROUP="${TARGET_ENV}-${GROUP}"
+        fi
 
-        #  --group "${env}-${RUNNER_NAME}" \ //TODO
         ECS_TASK_ID=$(aws ecs run-task \
           --launch-type "FARGATE" \
+          --group "$GROUP" \
           --cluster "${{ inputs.ecs_cluster_name }}" \
           --network-configuration file://./network_config.json \
           --task-definition "${{ inputs.ecs_task_definition }}" \
