@@ -35,7 +35,7 @@ inputs:
   pat_token:
     description: "GitHub PAT token to access APIs to manage self hosted runner"
     required: true
-  enviroment:
+  environment:
     description: "Target environment on which the Github Runner will execute tasks"
     required: false
 
@@ -63,7 +63,7 @@ runs:
         ECS_TASK_CPU: ${{ inputs.ecs_task_cpu }}
         ECS_TASK_MEMORY: ${{ inputs.ecs_task_memory }}
         ECS_TASK_MAX_DURATION_SECONDS: ${{ inputs.ecs_task_max_duration_seconds }}
-        TARGET_ENV: ${{ inputs.enviroment }}
+        TARGET_ENV: ${{ inputs.environment }}
       run: |
         set -eo pipefail
 
