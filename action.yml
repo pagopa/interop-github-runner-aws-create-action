@@ -59,7 +59,8 @@ runs:
       env:
         ECS_TASK_CPU: ${{ inputs.ecs_task_cpu }}
         ECS_TASK_MEMORY: ${{ inputs.ecs_task_memory }}
-        ECS_TASK_MAX_DURATION_SECONDS: ${{ inputs.ecs_task_max_duration_seconds }}
+        ECS_TASK_MAX_DURATION_SECONDS: "45"
+        #ECS_TASK_MAX_DURATION_SECONDS: ${{ inputs.ecs_task_max_duration_seconds }}
       run: |
         set -eo pipefail
 
@@ -100,8 +101,7 @@ runs:
                 {\"name\":\"GITHUB_TOKEN\",\"value\":\"${REGISTRATION_TOKEN}\"}]}]}" > overrides.json
 
 
-        #  --reference-id "${RUNNER_NAME}" \
-        #  --group "${RUNNER_NAME}" \
+        #  --group "${env}-${RUNNER_NAME}" \ //TODO
         ECS_TASK_ID=$(aws ecs run-task \
           --launch-type "FARGATE" \
           --cluster "${{ inputs.ecs_cluster_name }}" \
