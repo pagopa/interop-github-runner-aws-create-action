@@ -50,9 +50,9 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: Checkout
-      id: checkout
-      uses: actions/checkout@v4
+    #- name: Checkout
+    #  id: checkout
+    #  uses: actions/checkout@v4
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -78,7 +78,6 @@ runs:
         PAT_TOKEN: ${{ inputs.pat_token }}
         TARGET_ENV: ${{ inputs.environment }}
       run: |
-        ls ${{ github.action_path }}
         ${{ github.action_path }}/scripts/createGithubRunner.sh
 
     - name: Create ecs_task_id artifact
