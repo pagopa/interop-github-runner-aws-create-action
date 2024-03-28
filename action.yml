@@ -14,6 +14,15 @@ inputs:
   ecs_task_definition:
     description: "ECS task definition family[:revision] or full ARN"
     required: true
+  ecs_task_cpu:
+    description: "ECS task cpu"
+    required: false
+  ecs_task_memory:
+    description: "ECS task memory"
+    required: false
+  ecs_task_max_duration_seconds:
+    description: "ECS task max execution time in seconds"
+    required: false
   ecs_container_name:
     description: "Name of the gh runner container in the ECS task definition"
     required: true
@@ -26,17 +35,23 @@ inputs:
   pat_token:
     description: "GitHub PAT token to access APIs to manage self hosted runner"
     required: true
+  environment:
+    description: "Target environment on which the Github Runner will execute tasks"
+    required: false
 
 outputs:
   runner_name:
     value: ${{ steps.create_github_runner.outputs.runner_name }}
     description: 'Name of the self-hosted runner'
+  ecs_task_id:
+    value: ${{ steps.create_github_runner.outputs.ecs_task_id }}
+    description: 'Id of the ECS task that has been started'
 
 runs:
   using: "composite"
   steps:
     - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v1
+      uses: aws-actions/configure-aws-credentials@v4
       with:
         aws-region: ${{ inputs.aws_region }}
         role-to-assume: ${{ inputs.iam_role_arn }}
@@ -44,68 +59,38 @@ runs:
     - name: Create GitHub Runner
       id: create_github_runner
       shell: bash
+      env:
+        ECS_CLUSTER_NAME: ${{ inputs.ecs_cluster_name }}
+        ECS_CONTAINER_NAME: ${{ inputs.ecs_container_name }}
+        ECS_TASK_CPU: ${{ inputs.ecs_task_cpu }}
+        ECS_TASK_DEFINITION: ${{ inputs.ecs_task_definition }}
+        ECS_TASK_MAX_DURATION_SECONDS: ${{ inputs.ecs_task_max_duration_seconds }}
+        ECS_TASK_MEMORY: ${{ inputs.ecs_task_memory }}
+        ECS_TASK_SEC_GROUP: ${{ inputs.ecs_task_sec_group }}
+        ECS_TASK_SUBNET_ID: ${{ inputs.ecs_task_subnet_id }}
+        GITHUB_REPO: ${{ github.repository }}
+        GITHUB_RUN_ID: ${{ github.run_id }}
+        GITHUB_RUN_NUMBER: ${{ github.run_number }}
+        MATRIX_INDEX: ${{ matrix.index }}
+        PAT_TOKEN: ${{ inputs.pat_token }}
+        TARGET_ENV: ${{ inputs.environment }}
       run: |
-        set -eo pipefail
+        ${{ github.action_path }}/scripts/createGithubRunner.sh
 
-        REGISTRATION_TOKEN=$(curl -s \
-          -X POST \
-          -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer ${{ inputs.pat_token }}" \
-          https://api.github.com/repos/${{ github.repository }}/actions/runners/registration-token | jq ".token" -r)
+    - name: Create ecs_task_id artifact
+      if: always()
+      env:
+        INDEX: ${{ matrix.index }}
+        ECS_TASK_ID: ${{ steps.create_github_runner.outputs.ecs_task_id }}
+      shell: bash
+      run: |
+        set -euo pipefail
 
-        RUNNER_NAME="${{ github.run_id }}-${{ matrix.index }}"
-        GITHUB_REPOSITORY="https://github.com/${{ github.repository }}"
-
-        echo "{\"awsvpcConfiguration\":{\"assignPublicIp\":\"DISABLED\",
-            \"securityGroups\":[\"${{ inputs.ecs_task_sec_group }}\"],
-            \"subnets\":[\"${{ inputs.ecs_task_subnet_id }}\"]}}" > network_config.json
-
-        echo "{\"containerOverrides\":[{\"name\":\"${{ inputs.ecs_container_name }}\",\"environment\":[
-              {\"name\":\"RUNNER_NAME\",\"value\":\"${RUNNER_NAME}\"},
-              {\"name\":\"GITHUB_REPOSITORY\",\"value\":\"${GITHUB_REPOSITORY}\"},
-              {\"name\":\"GITHUB_TOKEN\",\"value\":\"${REGISTRATION_TOKEN}\"}]}]}" > overrides.json
-
-        ECS_TASK_ID=$(aws ecs run-task \
-          --launch-type "FARGATE" \
-          --cluster "${{ inputs.ecs_cluster_name }}" \
-          --network-configuration file://./network_config.json \
-          --task-definition "${{ inputs.ecs_task_definition }}" \
-          --overrides file://./overrides.json \
-          | jq -r '.tasks[0].taskArn' \
-          | cut -d "/" -f 3)
-
-        echo "[INFO] Started ECS task $ECS_TASK_ID"
-        echo "[INFO] Waiting for self-hosted runner registration"
-        sleep 30
-
-        START_TIME=$(date +%s)
-        while [ $(( $(date +%s) - 300 )) -lt $START_TIME ]; do
-
-          echo "[INFO] Waiting for self-hosted runner registration"
-
-          GITHUB_RUNNER_ID=$(curl -s \
-              -H "Accept: application/vnd.github+json" \
-              -H "Authorization: Bearer ${{ inputs.pat_token }}" \
-              https://api.github.com/repos/${{ github.repository }}/actions/runners \
-              | jq -r '.runners | map(select(.name == "'$RUNNER_NAME'")) | .[].id')
-
-          if [ -n "$GITHUB_RUNNER_ID" ]; then
-            echo "[INFO] Self-hosted runner ${RUNNER_NAME} has been added to this repo"
-            break
-          fi
-
-          sleep 10
-
-        done
-
-        if [ -z "$GITHUB_RUNNER_ID" ]; then
-          echo "[ERROR] $GITHUB_RUNNER_ID is empty" >&2
-          exit 1
-        fi
-
-        curl -s \
-          -X PUT \
-          -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer ${{ inputs.pat_token }}" \
-          https://api.github.com/repos/${{ github.repository }}/actions/runners/${GITHUB_RUNNER_ID}/labels \
-          -d '{"labels":["run_id:${{ github.run_id }}", "matrix_index:${{matrix.index}}", "task_id:'${ECS_TASK_ID}'"]}'
+        touch ${INDEX}_${ECS_TASK_ID}
+    - name: Upload ecs_task_id artifact
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.index}}_ecs_task_id
+        path: "${{ matrix.index}}_${{ steps.create_github_runner.outputs.ecs_task_id }}"
+        retention-days: 1
