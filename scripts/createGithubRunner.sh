@@ -105,7 +105,7 @@ while [ "$retry_count" -lt "$max_retry" ]; do
     -H "Accept: application/vnd.github+json" \
     -H "Authorization: Bearer ${PAT_TOKEN}" \
     https://api.github.com/repos/${GITHUB_REPO}/actions/runners/${GITHUB_RUNNER_ID}/labels \
-    -d '{"labels":["run_id:${GITHUB_RUN_ID}", "matrix_index:${MATRIX_INDEX}", "task_id:'${ECS_TASK_ID}'", "run_number:${GITHUB_RUN_NUMBER}"]}')
+    -d '{"labels":["run_id:'${GITHUB_RUN_ID}'", "matrix_index:'${MATRIX_INDEX}'", "task_id:'${ECS_TASK_ID}'", "run_number:'${GITHUB_RUN_NUMBER}'"]}')
 
   echo "[INFO] Set label API call result ${SET_LABEL_OUTPUT}"
 
