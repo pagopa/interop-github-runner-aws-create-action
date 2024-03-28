@@ -78,8 +78,8 @@ runs:
         PAT_TOKEN: ${{ inputs.pat_token }}
         TARGET_ENV: ${{ inputs.environment }}
       run: |
-        echo ${{ github.action_path }}
-        ./${{ github.action_path }}/scripts/createGithubRunner.sh
+        ls ${{ github.action_path }}
+        ${{ github.action_path }}/scripts/createGithubRunner.sh
 
     - name: Create ecs_task_id artifact
       if: always()
