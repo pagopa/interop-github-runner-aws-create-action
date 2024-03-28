@@ -50,9 +50,6 @@ outputs:
 runs:
   using: "composite"
   steps:
-    #- name: Checkout
-    #  id: checkout
-    #  uses: actions/checkout@v4
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
