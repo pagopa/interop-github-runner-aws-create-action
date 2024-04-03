@@ -44,7 +44,7 @@ if [[ -n "$TARGET_ENV" ]]; then
 fi
 
 echo "Run task with GROUP:${GROUP} CLUSTER: ${ECS_CLUSTER_NAME} TASK DEF: ${ECS_TASK_DEFINITION}"
-echo "OVERRIDES: ${cat overrides.json}"
+echo "OVERRIDES: $(cat overrides.json)"
 
 ECS_TASK_ID=$(aws ecs run-task \
   --launch-type "FARGATE" \
