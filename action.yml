@@ -37,8 +37,7 @@ inputs:
     required: true
   environment:
     description: "Target environment on which the Github Runner will execute tasks"
-    default: "dev"
-    required: false
+    required: true
 
 outputs:
   runner_name:
