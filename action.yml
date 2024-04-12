@@ -37,7 +37,7 @@ inputs:
     required: true
   environment:
     description: "Target environment on which the Github Runner will execute tasks"
-    required: false
+    required: true
 
 outputs:
   runner_name:
@@ -81,16 +81,17 @@ runs:
       if: always()
       env:
         INDEX: ${{ matrix.index }}
+        TARGET_ENV: ${{ inputs.environment }}
         ECS_TASK_ID: ${{ steps.create_github_runner.outputs.ecs_task_id }}
       shell: bash
       run: |
         set -euo pipefail
 
-        touch ${INDEX}_${ECS_TASK_ID}
+        touch ${INDEX}_${TARGET_ENV}_${ECS_TASK_ID}
     - name: Upload ecs_task_id artifact
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ matrix.index}}_ecs_task_id
-        path: "${{ matrix.index}}_${{ steps.create_github_runner.outputs.ecs_task_id }}"
+        name: ${{ matrix.index}}_${{ inputs.environment }}_ecs_task_id
+        path: "${{ matrix.index}}_${{ inputs.environment }}_${{ steps.create_github_runner.outputs.ecs_task_id }}"
         retention-days: 1
