@@ -2,6 +2,11 @@
 
 set -euo pipefail
 
+if [[ -z "$TARGET_ENV" ]]; then
+  echo "Error: Target environment is required"
+  exit 1
+fi
+
 REGISTRATION_TOKEN=$(curl -s \
   -X POST \
   -H "Accept: application/vnd.github+json" \
@@ -38,10 +43,7 @@ echo "{\"containerOverrides\":[{\"name\":\"${ECS_CONTAINER_NAME}\",
         {\"name\":\"GITHUB_REPOSITORY\",\"value\":\"${GITHUB_REPOSITORY}\"},
         {\"name\":\"GITHUB_TOKEN\",\"value\":\"${REGISTRATION_TOKEN}\"}]}]}" > overrides.json
 
-GROUP=${RUNNER_NAME}
-if [[ -n "$TARGET_ENV" ]]; then
-  GROUP="${TARGET_ENV}-${GROUP}"
-fi
+GROUP="${TARGET_ENV}-${RUNNER_NAME}"
 
 echo "Run task with GROUP:${GROUP} CLUSTER: ${ECS_CLUSTER_NAME} TASK DEF: ${ECS_TASK_DEFINITION}"
 echo "OVERRIDES: $(cat overrides.json)"
@@ -102,10 +104,7 @@ retry_count=0
 max_retry=5
 labels_have_been_applied=""
 
-RUN_ID_LABEL=${GITHUB_RUN_ID}
-if [[ -n "$TARGET_ENV" ]]; then
-  RUN_ID_LABEL="${TARGET_ENV}-${RUN_ID_LABEL}"
-fi
+RUN_ID_LABEL="${TARGET_ENV}-${GITHUB_RUN_ID}"
 
 echo "[INFO] Start loop to set label for self-hosted runner ${GITHUB_RUNNER_ID}"
 while [ "$retry_count" -lt "$max_retry" ]; do
