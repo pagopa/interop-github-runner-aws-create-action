@@ -13,7 +13,7 @@ REGISTRATION_TOKEN=$(curl -s \
   -H "Authorization: Bearer ${PAT_TOKEN}" \
   https://api.github.com/repos/${GITHUB_REPO}/actions/runners/registration-token | jq ".token" -r)
 
-RUNNER_NAME="${GITHUB_RUN_ID}-${MATRIX_INDEX}"
+RUNNER_NAME="${TARGET_ENV}-${GITHUB_RUN_ID}-${MATRIX_INDEX}"
 GITHUB_REPOSITORY="https://github.com/${GITHUB_REPO}"
 
 echo "{\"awsvpcConfiguration\":{\"assignPublicIp\":\"DISABLED\",
@@ -43,7 +43,7 @@ echo "{\"containerOverrides\":[{\"name\":\"${ECS_CONTAINER_NAME}\",
         {\"name\":\"GITHUB_REPOSITORY\",\"value\":\"${GITHUB_REPOSITORY}\"},
         {\"name\":\"GITHUB_TOKEN\",\"value\":\"${REGISTRATION_TOKEN}\"}]}]}" > overrides.json
 
-GROUP="${TARGET_ENV}-${RUNNER_NAME}"
+GROUP="${RUNNER_NAME}"
 
 echo "Run task with GROUP:${GROUP} CLUSTER: ${ECS_CLUSTER_NAME} TASK DEF: ${ECS_TASK_DEFINITION}"
 echo "OVERRIDES: $(cat overrides.json | sed -e "s/${REGISTRATION_TOKEN}/***/g")"
