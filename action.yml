@@ -51,7 +51,7 @@ runs:
   using: "composite"
   steps:
     - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
+      uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4
       with:
         aws-region: ${{ inputs.aws_region }}
         role-to-assume: ${{ inputs.iam_role_arn }}
@@ -90,7 +90,7 @@ runs:
         touch ${INDEX}_${TARGET_ENV}_${ECS_TASK_ID}
     - name: Upload ecs_task_id artifact
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
       with:
         name: ${{ matrix.index}}_${{ inputs.environment }}_ecs_task_id
         path: "${{ matrix.index}}_${{ inputs.environment }}_${{ steps.create_github_runner.outputs.ecs_task_id }}"
