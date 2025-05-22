@@ -38,6 +38,10 @@ inputs:
   environment:
     description: "Target environment on which the Github Runner will execute tasks"
     required: true
+  replace_existing_runner:
+    description: "('true'|'false') Replace existing runner if the runner name is the same"
+    required: false
+    default: 'true'
 
 outputs:
   runner_name:
@@ -74,6 +78,7 @@ runs:
         MATRIX_INDEX: ${{ matrix.index }}
         PAT_TOKEN: ${{ inputs.pat_token }}
         TARGET_ENV: ${{ inputs.environment }}
+        REPLACE_EXISTING_RUNNER: ${{ inputs.replace_existing_runner }}
       run: |
         ${{ github.action_path }}/scripts/createGithubRunner.sh
 

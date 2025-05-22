@@ -40,6 +40,7 @@ echo "{\"containerOverrides\":[{\"name\":\"${ECS_CONTAINER_NAME}\",
       \"environment\":[
         $MAXDURATION_ENV_CONFIG
         {\"name\":\"RUNNER_NAME\",\"value\":\"${RUNNER_NAME}\"},
+        {\"name\":\"REPLACE_EXISTING_RUNNER\",\"value\":\"${REPLACE_EXISTING_RUNNER}\"},
         {\"name\":\"GITHUB_REPOSITORY\",\"value\":\"${GITHUB_REPOSITORY}\"},
         {\"name\":\"GITHUB_TOKEN\",\"value\":\"${REGISTRATION_TOKEN}\"}]}]}" > overrides.json
 
