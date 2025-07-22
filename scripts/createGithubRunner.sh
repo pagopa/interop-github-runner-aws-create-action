@@ -7,11 +7,13 @@ if [[ -z "$TARGET_ENV" ]]; then
   exit 1
 fi
 
-REGISTRATION_TOKEN=$(curl -s \
-  -X POST \
+export GH_TOKEN="$PAT_TOKEN"
+
+REGISTRATION_TOKEN=$(gh api \
+  --method POST \
   -H "Accept: application/vnd.github+json" \
-  -H "Authorization: Bearer ${PAT_TOKEN}" \
-  https://api.github.com/repos/${GITHUB_REPO}/actions/runners/registration-token | jq ".token" -r)
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  /repos/${GITHUB_REPO}/actions/runners/registration-token | jq ".token" -r)
 
 RUNNER_NAME="${TARGET_ENV}-${GITHUB_RUN_ID}-${MATRIX_INDEX}"
 GITHUB_REPOSITORY="https://github.com/${GITHUB_REPO}"
@@ -70,23 +72,19 @@ START_TIME=$(date +%s)
 while [ $(( $(date +%s) - 300 )) -lt $START_TIME ]; do
 
   echo "[INFO] Waiting for self-hosted runner registration"
-
-  RUNNERS_LIST=$(curl -s \
-      -H "Accept: application/vnd.github+json" \
-      -H "Authorization: Bearer ${PAT_TOKEN}" \
-      https://api.github.com/repos/${GITHUB_REPO}/actions/runners)
+  RUNNERS_LIST=$(gh api --paginate repos/${GITHUB_REPO}/actions/runners)
 
   if [ -n "$RUNNERS_LIST" ]; then
     GITHUB_RUNNER_ID=$(echo $RUNNERS_LIST | jq -r '.runners | map(select(.name == "'$RUNNER_NAME'")) | .[].id')
 
     if [ -n "$GITHUB_RUNNER_ID" ]; then
+
       echo "[INFO] Self-hosted runner ${RUNNER_NAME} has been added to this repo"
-      GITHUB_RUNNER_STATUS=$(curl -s \
-        -H "Accept: application/vnd.github+json" \
-        -H "Authorization: Bearer ${PAT_TOKEN}" \
-        https://api.github.com/repos/${GITHUB_REPO}/actions/runners \
+      GITHUB_RUNNER_STATUS=$(gh api --paginate \
+        repos/${GITHUB_REPO}/actions/runners \
         | jq -r '.runners | map(select(.name == "'$RUNNER_NAME'")) | .[].status')
-        echo "[INFO] Self-hosted runner status ${GITHUB_RUNNER_STATUS}"
+
+      echo "[INFO] Self-hosted runner status ${GITHUB_RUNNER_STATUS}"
 
       break
     fi
@@ -109,12 +107,13 @@ RUN_ID_LABEL="${TARGET_ENV}-${GITHUB_RUN_ID}"
 
 echo "[INFO] Start loop to set label for self-hosted runner ${GITHUB_RUNNER_ID}"
 while [ "$retry_count" -lt "$max_retry" ]; do
-  SET_LABEL_OUTPUT=$(curl -s \
-    -X PUT \
+
+  SET_LABEL_OUTPUT=$(gh api \
+    --method PUT \
     -H "Accept: application/vnd.github+json" \
-    -H "Authorization: Bearer ${PAT_TOKEN}" \
-    https://api.github.com/repos/${GITHUB_REPO}/actions/runners/${GITHUB_RUNNER_ID}/labels \
-    -d '{"labels":["run_id:'${RUN_ID_LABEL}'", "matrix_index:'${MATRIX_INDEX}'", "task_id:'${ECS_TASK_ID}'", "run_number:'${GITHUB_RUN_NUMBER}'"]}')
+    -H "X-GitHub-Api-Version: 2022-11-28" \
+    /repos/${GITHUB_REPO}/actions/runners/${GITHUB_RUNNER_ID}/labels \
+    -f 'labels[]="run_id:'${RUN_ID_LABEL}'"' -f 'labels[]="matrix_index:'${MATRIX_INDEX}'"' -f 'labels[]="task_id:'${ECS_TASK_ID}'"' -f 'labels[]="run_number:'${GITHUB_RUN_NUMBER}'"')
 
   echo "[INFO] Set label API call result ${SET_LABEL_OUTPUT}"
 
