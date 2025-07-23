@@ -72,7 +72,10 @@ START_TIME=$(date +%s)
 while [ $(( $(date +%s) - 300 )) -lt $START_TIME ]; do
 
   echo "[INFO] Waiting for self-hosted runner registration"
-  RUNNERS_LIST=$(gh api --paginate repos/${GITHUB_REPO}/actions/runners)
+  RUNNERS_LIST=$(gh api --paginate \
+    -H "Accept: application/vnd.github+json" \
+    -H "X-GitHub-Api-Version: 2022-11-28" \
+    /repos/${GITHUB_REPO}/actions/runners)
 
   if [ -n "$RUNNERS_LIST" ]; then
     GITHUB_RUNNER_ID=$(echo $RUNNERS_LIST | jq -r '.runners | map(select(.name == "'$RUNNER_NAME'")) | .[].id')
@@ -81,7 +84,9 @@ while [ $(( $(date +%s) - 300 )) -lt $START_TIME ]; do
 
       echo "[INFO] Self-hosted runner ${RUNNER_NAME} has been added to this repo"
       GITHUB_RUNNER_STATUS=$(gh api --paginate \
-        repos/${GITHUB_REPO}/actions/runners \
+        -H "Accept: application/vnd.github+json" \
+        -H "X-GitHub-Api-Version: 2022-11-28" \
+        /repos/${GITHUB_REPO}/actions/runners \
         | jq -r '.runners | map(select(.name == "'$RUNNER_NAME'")) | .[].status')
 
       echo "[INFO] Self-hosted runner status ${GITHUB_RUNNER_STATUS}"
