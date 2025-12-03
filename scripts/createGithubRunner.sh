@@ -69,7 +69,7 @@ sleep 30
 
 GITHUB_RUNNER_ID=null
 START_TIME=$(date +%s)
-while [ $(( $(date +%s) - 300 )) -lt $START_TIME ]; do
+while [ $(( $(date +%s) - ${RUNNER_REGISTRATION_TIMEOUT:-600} )) -lt $START_TIME ]; do
 
   echo "[INFO] Waiting for self-hosted runner registration"
   RUNNERS_LIST=$(gh api --paginate \
